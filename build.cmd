@@ -12,7 +12,7 @@ if not exist "%CSC%" (
 if not exist build mkdir build
 if not exist dist mkdir dist
 
-set ENG=src\Engine\Win32.cs src\Engine\InputEngine.cs src\Engine\WindowTarget.cs
+set ENG=src\Engine\Win32.cs src\Engine\InputEngine.cs src\Engine\WindowTarget.cs src\Engine\ProcessInfo.cs
 set CORE=src\Core\MacroModel.cs src\Core\Runner.cs src\Core\Hotkeys.cs
 set UI=src\UI\Theme.cs src\UI\IntervalDialog.cs src\UI\MainForm.cs
 

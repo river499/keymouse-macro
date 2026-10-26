@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Text;
 using System.Windows.Forms;
 using KMMacro.Core;
 using KMMacro.Engine;
@@ -111,6 +112,10 @@ namespace KMMacro.UI
         Label lblRunReason;
         CheckBox chkRestoreLast;
         Button btnClearLast;
+        Button btnRestartElev;
+
+        readonly object _logGate = new object();
+        string _logFile;
 
         // ==================== 底部与状态栏 ====================
         RichTextBox rtbLog;
@@ -159,6 +164,9 @@ namespace KMMacro.UI
             UpdateKeyControls();
             RefreshPlan();
 
+            Log("运行身份：" + (ProcessInfo.IsSelfElevated()
+                ? "管理员（可操作管理员权限的目标）"
+                : "普通用户（若目标以管理员运行，输入会被系统丢弃）"));
             Log("键鼠宏工坊 v1.0 已就绪   F8 开始/停止 · F9 停止 · F10 暂停 · F12 急停");
             Log("流程：① 选引擎  ② 绑定目标窗口  ③ 在 ④/⑤ 里「＋ 添加到序列」  ④ 点「开始运行」或按 F8");
         }
@@ -621,11 +629,15 @@ namespace KMMacro.UI
             t.SetColumnSpan(lblRunReason, 2);
 
             btnClearLog = Theme.Ghost("清空日志", 0, 0, 100, 24);
-            btnClearLog.Dock = DockStyle.Top;
-            btnClearLog.Height = 24;
-            btnClearLog.Margin = new Padding(0, 0, 0, 0);
+            btnClearLog.Dock = DockStyle.Fill;
+            btnClearLog.Margin = new Padding(0, 0, 3, 0);
             t.Controls.Add(btnClearLog, 0, 3);
-            t.SetColumnSpan(btnClearLog, 2);
+
+            btnRestartElev = Theme.Btn("以管理员身份重启", Theme.Accent, 0, 0, 100, 24);
+            btnRestartElev.Font = Theme.FontSmall;
+            btnRestartElev.Dock = DockStyle.Fill;
+            btnRestartElev.Margin = new Padding(3, 0, 0, 0);
+            t.Controls.Add(btnRestartElev, 1, 3);
 
             return p;
         }
@@ -747,6 +759,7 @@ namespace KMMacro.UI
             btnLoadProfile.Click += delegate { LoadProfileFile(); };
             btnOpenProfiles.Click += delegate { OpenProfilesFolder(); };
             btnClearLast.Click += delegate { ClearAutoMemory(); };
+            btnRestartElev.Click += delegate { RestartAsAdmin(); };
 
             cboHotStart.SelectedIndexChanged += delegate { RegisterHotkeys(); };
             cboHotStop.SelectedIndexChanged += delegate { RegisterHotkeys(); };
@@ -844,6 +857,9 @@ namespace KMMacro.UI
             _targetInfo = WTarget.FromHandle(hwnd);
             lblTarget.Text = "已绑定：" + Trim(WTarget.Describe(hwnd), 60);
             Log("已绑定目标窗口：" + WTarget.Describe(hwnd));
+            int tpid;
+            if (ProcessInfo.TargetBlocksInput(hwnd, out tpid))
+                Log(string.Format("注意：目标进程(pid {0})以管理员权限运行，本工具当前是普通权限——输入会被系统丢弃，请以管理员身份重启本工具。", tpid));
             UpdateStatus();
             UpdateMouseControls();
             RefreshPlan();
@@ -1204,6 +1220,19 @@ namespace KMMacro.UI
                 return;
             }
 
+            if (_target != IntPtr.Zero && Win32.IsWindow(_target))
+            {
+                int blockedPid;
+                if (ProcessInfo.TargetBlocksInput(_target, out blockedPid))
+                {
+                    Log(string.Format(
+                        "无法开始：目标进程(pid {0})以管理员权限运行，本工具未提权，注入的输入会被 Windows 丢弃。请点「以管理员身份重启」后重试。",
+                        blockedPid));
+                    UpdateRunAffordance();
+                    return;
+                }
+            }
+
             Step fallback = single;
             if (single != null) p.Steps.Clear();
 
@@ -1510,6 +1539,12 @@ namespace KMMacro.UI
                 ? "当前引擎：需要绑定目标窗口（可在后台/最小化运行）"
                 : "当前引擎：前台模拟，可不绑定；若已绑定则运行时自动激活它";
 
+            // 权限不对等时输入会被 Windows 静默丢弃——必须在界面上拦住，不让用户对着"就绪"空跑
+            bool elevBlocked = false;
+            int targetPid = 0;
+            if (_target != IntPtr.Zero && Win32.IsWindow(_target))
+                elevBlocked = ProcessInfo.TargetBlocksInput(_target, out targetPid);
+
             string reason = null;
             if (_steps.Count == 0)
                 reason = "还没有动作：先「＋ 添加到序列」";
@@ -1517,24 +1552,31 @@ namespace KMMacro.UI
                 reason = "当前引擎需要目标窗口：请先在 ② 绑定";
             else if (needTarget && !Win32.IsWindow(_target))
                 reason = "目标窗口已关闭：请重新绑定";
+            else if (elevBlocked)
+                reason = "目标以管理员运行：请点下方「以管理员身份重启」";
             else if (_target == IntPtr.Zero && HasClientCoordStep())
                 reason = "「窗口客户区」坐标需先绑定目标窗口";
 
-            bool warnTarget = needTarget && _target == IntPtr.Zero;
-            lblTargetWarn.Text = warnTarget ? "⚠ 当前引擎必须绑定目标窗口，否则无法开始" : "";
+            string warn = "";
+            if (needTarget && _target == IntPtr.Zero)
+                warn = "⚠ 当前引擎必须绑定目标窗口，否则无法开始";
+            else if (elevBlocked)
+                warn = "⚠ 目标以管理员权限运行；未提权时注入的输入会被系统丢弃，看起来就是「没反应」";
+            lblTargetWarn.Text = warn;
 
             bool running = _runner.IsRunning;
-            if (running) reason = "运行中……";
-
             bool canStart = reason == null && !running;
-            lblRunReason.Text = canStart ? "就绪：点「开始运行」或按 F8"
+
+            lblRunReason.Text = canStart
+                ? "就绪：点「开始运行」或按 F8"
                 : (running ? "运行中……" : reason);
             lblRunReason.ForeColor = canStart ? Theme.Muted : Theme.Red;
 
-            // 禁用态必须看起来就是禁用的，否则又是一个误导
+            // 禁用态必须看起来就是禁用的
             btnStart.Enabled = canStart;
             btnStart.BackColor = canStart ? Theme.Green : Color.FromArgb(214, 219, 226);
             btnStart.ForeColor = canStart ? Color.White : Color.FromArgb(136, 144, 158);
+
             Color idle = Color.FromArgb(214, 219, 226);
             Color idleText = Color.FromArgb(136, 144, 158);
 
@@ -1791,10 +1833,29 @@ namespace KMMacro.UI
                 catch { }
                 return;
             }
+
+            string line = string.Format("[{0:HH:mm:ss}] {1}", DateTime.Now, msg);
             if (rtbLog.TextLength > 160000) rtbLog.Clear();
-            rtbLog.AppendText(string.Format("[{0:HH:mm:ss}] {1}{2}", DateTime.Now, msg, Environment.NewLine));
+            rtbLog.AppendText(line + Environment.NewLine);
             rtbLog.SelectionStart = rtbLog.TextLength;
             rtbLog.ScrollToCaret();
+            AppendLogFile(line);
+        }
+
+        /// <summary>日志同时落盘，出问题时可直接看文件，不必让用户复述。</summary>
+        void AppendLogFile(string line)
+        {
+            try
+            {
+                if (_logFile == null)
+                {
+                    string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    _logFile = Path.Combine(dir, DateTime.Now.ToString("yyyyMMdd") + ".log");
+                }
+                lock (_logGate) File.AppendAllText(_logFile, line + Environment.NewLine, Encoding.UTF8);
+            }
+            catch { }
         }
 
         static void SetNum(NumericUpDown n, int v)
