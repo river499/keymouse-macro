@@ -1,0 +1,9 @@
+build/
+dist/*.exe
+tests/*.exe
+tests/*.log
+tests/*.ini
+tests/target*.log
+profiles/
+*.user
+*.suo
