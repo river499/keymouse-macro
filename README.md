@@ -100,7 +100,7 @@ build.cmd
 
 产物：
 
-- `dist\KMMacro.exe` — 主程序（单文件，约 100 KB 级）
+- `dist\键鼠宏工坊.exe` — 主程序（单文件，约 97 KB；`KMMacro.exe` 是同内容副本）
 - `tests\KMMacroTestTarget.exe` — 验证用目标窗口（把收到的消息写日志）
 - `tests\EngineTest.exe` — 自动化验证程序
 
