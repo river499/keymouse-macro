@@ -50,7 +50,6 @@ namespace KMMacro.UI
         NumericUpDown numHold;
         NumericUpDown numLoop;
         NumericUpDown numLimitSec;
-        Label lblRunHint;
 
         ComboBox cbMouseButton;
         ComboBox cbMouseAction;
@@ -73,10 +72,6 @@ namespace KMMacro.UI
         Button btnAddKey;
         Button btnAddText;
         Label lblKeyHint;
-
-        Button btnQuickMouse;
-        Button btnQuickKey;
-        Label lblQuickHint;
 
         // ==================== 页2 控件 ====================
         ListView lvSteps;
@@ -103,6 +98,19 @@ namespace KMMacro.UI
         Button btnOpenProfiles;
         Label lblProfilesPath;
         Label lblAbout;
+
+        // 新增：状态与计划摘要
+        Label lblTargetWarn;
+        Label lblPlanEngine;
+        Label lblPlanTarget;
+        Label lblPlanActions;
+        Label lblPlanRhythm;
+        Button btnGoRhythm;
+        Button btnTryMouse;
+        Button btnTryKey;
+        Label lblRunReason;
+        CheckBox chkRestoreLast;
+        Button btnClearLast;
 
         // ==================== 底部与状态栏 ====================
         RichTextBox rtbLog;
@@ -147,9 +155,12 @@ namespace KMMacro.UI
             UpdateEngineHint();
             SyncIntervalEnabled();
             UpdateStatus();
+            UpdateMouseControls();
+            UpdateKeyControls();
+            RefreshPlan();
 
             Log("键鼠宏工坊 v1.0 已就绪   F8 开始/停止 · F9 停止 · F10 暂停 · F12 急停");
-            Log("流程：① 选输入引擎  ② 绑定目标窗口  ③ 配置动作并「添加」或用快捷运行。");
+            Log("流程：① 选引擎  ② 绑定目标窗口  ③ 在 ④/⑤ 里「＋ 添加到序列」  ④ 点「开始运行」或按 F8");
         }
 
         // ==================== 界面构建 ====================
@@ -267,7 +278,7 @@ namespace KMMacro.UI
             g1.Controls.Add(lblEngineHint);
 
             // ---------- ② 目标窗口 ----------
-            GroupBox g2 = Theme.Card2("② 目标窗口", 14, 132, 500, 172);
+            GroupBox g2 = Theme.Card2("② 目标窗口", 14, 132, 500, 208);
             p.Controls.Add(g2);
             cbWindows = Theme.Cbo(16, 26, 326);
             g2.Controls.Add(cbWindows);
@@ -277,56 +288,40 @@ namespace KMMacro.UI
             g2.Controls.Add(btnPickWindow);
             btnUnbind = Theme.Ghost("取消绑定", 140, 60, 100, 26);
             g2.Controls.Add(btnUnbind);
-            btnDiagnose = Theme.Btn("后台诊断", Theme.Purple, 348, 59, 132, 26);
+            btnDiagnose = Theme.Btn("检查窗口", Theme.Purple, 348, 59, 132, 26);
             g2.Controls.Add(btnDiagnose);
             lblTarget = Theme.Lbl("未绑定窗口", 16, 94, 464, 22);
             lblTarget.Font = Theme.FontBold;
             g2.Controls.Add(lblTarget);
-            lblTargetHint = Theme.Hint("前台模拟可不绑定；后台消息 / 后台保活必须先绑定。", 16, 120, 464, 44);
+            lblTargetHint = Theme.Hint("", 16, 120, 464, 22);
             g2.Controls.Add(lblTargetHint);
+            lblTargetWarn = Theme.Hint("", 16, 146, 464, 22);
+            lblTargetWarn.ForeColor = Theme.Red;
+            g2.Controls.Add(lblTargetWarn);
 
-            // ---------- ③ 运行节奏 ----------
-            GroupBox g3 = Theme.Card2("③ 运行节奏", 14, 314, 500, 152);
+            // ---------- ③ 当前计划（只读） ----------
+            GroupBox g3 = Theme.Card2("③ 当前计划（下面「开始运行」会执行什么）", 14, 350, 500, 150);
             p.Controls.Add(g3);
-            rbFixed = Theme.Radio("固定", 16, 26, 60, 22);
-            g3.Controls.Add(rbFixed);
-            numFixed = Theme.Num(78, 25, 86, 0, 600000, 1000, 50);
-            g3.Controls.Add(numFixed);
-            g3.Controls.Add(Theme.Lbl("毫秒", 170, 27, 40, 20));
-            rbRandom = Theme.Radio("随机", 218, 26, 60, 22);
-            g3.Controls.Add(rbRandom);
-            numMin = Theme.Num(282, 25, 76, 0, 600000, 500, 50);
-            g3.Controls.Add(numMin);
-            g3.Controls.Add(Theme.Lbl("到", 362, 27, 20, 20));
-            numMax = Theme.Num(384, 25, 76, 0, 600000, 1500, 50);
-            g3.Controls.Add(numMax);
-
-            g3.Controls.Add(Theme.Lbl("按键时长", 16, 60, 70, 20));
-            numHold = Theme.Num(88, 59, 86, 0, 60000, 50, 10);
-            g3.Controls.Add(numHold);
-            g3.Controls.Add(Theme.Lbl("毫秒", 178, 61, 44, 20));
-            g3.Controls.Add(Theme.Lbl("循环次数", 232, 60, 74, 20));
-            numLoop = Theme.Num(308, 59, 76, 0, 1000000, 0, 1);
-            g3.Controls.Add(numLoop);
-            g3.Controls.Add(Theme.Lbl("0 = 无限", 392, 61, 100, 20));
-
-            g3.Controls.Add(Theme.Lbl("运行上限", 16, 94, 70, 20));
-            numLimitSec = Theme.Num(88, 93, 86, 0, 86400, 0, 10);
-            g3.Controls.Add(numLimitSec);
-            g3.Controls.Add(Theme.Lbl("秒，0 = 不限", 180, 95, 150, 20));
-            lblRunHint = Theme.Hint("间隔是「每个动作执行完之后再等多久」，随机间隔在做防检测的软件里更自然。", 16, 122, 466, 24);
-            g3.Controls.Add(lblRunHint);
-
-            // ---------- 底部快捷 ----------
-            btnQuickMouse = Theme.Btn("▶  运行鼠标动作", Theme.Green, 14, 474, 220, 38);
-            p.Controls.Add(btnQuickMouse);
-            btnQuickKey = Theme.Btn("▶  运行键盘动作", Theme.Accent, 244, 474, 220, 38);
-            p.Controls.Add(btnQuickKey);
-            lblQuickHint = Theme.Hint("底部「开始」按钮：宏列表非空则跑整个序列，为空则跑当前鼠标动作。", 478, 476, 540, 36);
-            p.Controls.Add(lblQuickHint);
+            lblPlanEngine = Theme.Lbl("", 16, 26, 240, 20);
+            lblPlanEngine.Font = Theme.FontSmall;
+            lblPlanEngine.ForeColor = Theme.Muted;
+            g3.Controls.Add(lblPlanEngine);
+            lblPlanTarget = Theme.Lbl("", 260, 26, 220, 20);
+            lblPlanTarget.Font = Theme.FontSmall;
+            lblPlanTarget.ForeColor = Theme.Muted;
+            g3.Controls.Add(lblPlanTarget);
+            lblPlanActions = Theme.Lbl("", 16, 52, 464, 38);
+            lblPlanActions.Font = Theme.FontSmall;
+            g3.Controls.Add(lblPlanActions);
+            lblPlanRhythm = Theme.Lbl("", 16, 94, 300, 20);
+            lblPlanRhythm.Font = Theme.FontSmall;
+            lblPlanRhythm.ForeColor = Theme.Muted;
+            g3.Controls.Add(lblPlanRhythm);
+            btnGoRhythm = Theme.Ghost("调整节奏 →", 332, 90, 150, 26);
+            g3.Controls.Add(btnGoRhythm);
 
             // ---------- ④ 鼠标动作 ----------
-            GroupBox g4 = Theme.Card2("④ 鼠标动作", 524, 10, 496, 236);
+            GroupBox g4 = Theme.Card2("④ 鼠标动作", 524, 10, 496, 272);
             p.Controls.Add(g4);
             g4.Controls.Add(Theme.Lbl("按键", 16, 26, 40, 20));
             cbMouseButton = Theme.Cbo(58, 25, 110);
@@ -358,13 +353,20 @@ namespace KMMacro.UI
             g4.Controls.Add(numJitter);
             g4.Controls.Add(Theme.Lbl("px", 366, 90, 24, 20));
 
-            lblMouseHint = Theme.Hint("「窗口客户区」坐标不随窗口移动变化，是绑定窗口场景的首选。", 16, 120, 462, 24);
+            g4.Controls.Add(Theme.Lbl("按住时长", 16, 122, 70, 20));
+            numHold = Theme.Num(92, 121, 80, 0, 60000, 50, 10);
+            g4.Controls.Add(numHold);
+            g4.Controls.Add(Theme.Lbl("毫秒", 178, 124, 50, 20));
+
+            lblMouseHint = Theme.Hint("", 16, 152, 462, 40);
             g4.Controls.Add(lblMouseHint);
-            btnAddMouse = Theme.Ghost("＋ 添加鼠标动作", 16, 176, 200, 34);
+            btnAddMouse = Theme.Btn("＋  添加到序列", Theme.Green, 16, 200, 220, 34);
             g4.Controls.Add(btnAddMouse);
+            btnTryMouse = Theme.Ghost("▶  试跑一次", 246, 200, 234, 34);
+            g4.Controls.Add(btnTryMouse);
 
             // ---------- ⑤ 键盘动作 ----------
-            GroupBox g5 = Theme.Card2("⑤ 键盘动作", 524, 256, 496, 208);
+            GroupBox g5 = Theme.Card2("⑤ 键盘动作", 524, 288, 496, 228);
             p.Controls.Add(g5);
             g5.Controls.Add(Theme.Lbl("修饰键", 16, 26, 50, 20));
             chkCtrl = Theme.Chk("Ctrl", 74, 24, 56, 22);
@@ -379,10 +381,10 @@ namespace KMMacro.UI
             g5.Controls.Add(Theme.Lbl("主键", 16, 58, 40, 20));
             cbKey = Theme.Cbo(58, 57, 150);
             g5.Controls.Add(cbKey);
-            g5.Controls.Add(Theme.Lbl("按住", 220, 58, 40, 20));
-            numKeyHold = Theme.Num(262, 57, 76, 0, 60000, 50, 10);
+            g5.Controls.Add(Theme.Lbl("按键时长", 220, 58, 74, 20));
+            numKeyHold = Theme.Num(298, 57, 76, 0, 60000, 50, 10);
             g5.Controls.Add(numKeyHold);
-            g5.Controls.Add(Theme.Lbl("毫秒", 344, 59, 40, 20));
+            g5.Controls.Add(Theme.Lbl("毫秒", 380, 59, 40, 20));
 
             g5.Controls.Add(Theme.Lbl("文本", 16, 90, 40, 20));
             txtText = new TextBox();
@@ -390,22 +392,23 @@ namespace KMMacro.UI
             txtText.Font = Theme.FontNormal;
             g5.Controls.Add(txtText);
 
-            btnAddKey = Theme.Ghost("＋ 添加按键动作", 16, 122, 200, 34);
+            btnAddKey = Theme.Btn("＋  添加按键动作", Theme.Green, 16, 122, 220, 34);
             g5.Controls.Add(btnAddKey);
-            btnAddText = Theme.Ghost("＋ 添加文本动作", 222, 122, 256, 34);
+            btnAddText = Theme.Btn("＋  添加文本动作", Theme.Green, 246, 122, 234, 34);
             g5.Controls.Add(btnAddText);
-
-            lblKeyHint = Theme.Hint("后台文本建议把「位置」设为窗口客户区并对准输入框，再添加文本动作。", 16, 164, 462, 36);
+            btnTryKey = Theme.Ghost("▶  试跑一次（只发按键）", 16, 156, 220, 34);
+            g5.Controls.Add(btnTryKey);
+            lblKeyHint = Theme.Hint("", 246, 158, 234, 60);
             g5.Controls.Add(lblKeyHint);
         }
 
         void BuildPageMacro(TabPage p)
         {
-            GroupBox g = Theme.Card2("动作序列（按顺序循环执行）", 14, 10, 720, 500);
+            GroupBox g = Theme.Card2("动作序列（按顺序循环执行）", 14, 10, 660, 500);
             p.Controls.Add(g);
 
             lvSteps = new ListView();
-            lvSteps.SetBounds(16, 24, 688, 462);
+            lvSteps.SetBounds(16, 24, 628, 462);
             lvSteps.View = View.Details;
             lvSteps.FullRowSelect = true;
             lvSteps.GridLines = false;
@@ -414,33 +417,62 @@ namespace KMMacro.UI
             lvSteps.Font = Theme.FontNormal;
             lvSteps.Columns.Add("#", 44, HorizontalAlignment.Center);
             lvSteps.Columns.Add("动作", 86, HorizontalAlignment.Left);
-            lvSteps.Columns.Add("参数", 414, HorizontalAlignment.Left);
+            lvSteps.Columns.Add("参数", 380, HorizontalAlignment.Left);
             lvSteps.Columns.Add("间隔(ms)", 118, HorizontalAlignment.Left);
             g.Controls.Add(lvSteps);
 
-            btnUp = Theme.Ghost("↑ 上移", 744, 26, 130, 34);
-            p.Controls.Add(btnUp);
-            btnDown = Theme.Ghost("↓ 下移", 884, 26, 130, 34);
-            p.Controls.Add(btnDown);
-            btnDel = Theme.Btn("删除", Theme.Red, 744, 68, 130, 34);
-            p.Controls.Add(btnDel);
-            btnClear = Theme.Ghost("清空", 884, 68, 130, 34);
-            p.Controls.Add(btnClear);
-            btnDup = Theme.Ghost("复制一份", 744, 110, 130, 34);
-            p.Controls.Add(btnDup);
-            btnSetInterval = Theme.Ghost("单步间隔", 884, 110, 130, 34);
-            p.Controls.Add(btnSetInterval);
+            // ---------- 运行节奏（集中在这一页） ----------
+            GroupBox gRhythm = Theme.Card2("运行节奏", 684, 10, 332, 240);
+            p.Controls.Add(gRhythm);
+            rbFixed = Theme.Radio("固定", 16, 28, 90, 22);
+            gRhythm.Controls.Add(rbFixed);
+            numFixed = Theme.Num(16, 54, 90, 0, 600000, 1000, 50);
+            gRhythm.Controls.Add(numFixed);
+            gRhythm.Controls.Add(Theme.Lbl("毫秒", 112, 57, 40, 20));
 
-            GroupBox g7 = Theme.Card2("说明", 744, 156, 270, 354);
-            p.Controls.Add(g7);
+            rbRandom = Theme.Radio("随机", 16, 84, 90, 22);
+            gRhythm.Controls.Add(rbRandom);
+            numMin = Theme.Num(16, 110, 80, 0, 600000, 500, 50);
+            gRhythm.Controls.Add(numMin);
+            gRhythm.Controls.Add(Theme.Lbl("到", 100, 113, 20, 20));
+            numMax = Theme.Num(122, 110, 80, 0, 600000, 1500, 50);
+            gRhythm.Controls.Add(numMax);
+
+            gRhythm.Controls.Add(Theme.Lbl("循环次数", 16, 144, 70, 20));
+            numLoop = Theme.Num(92, 143, 76, 0, 1000000, 0, 1);
+            gRhythm.Controls.Add(numLoop);
+            gRhythm.Controls.Add(Theme.Lbl("0 = 无限", 174, 146, 110, 20));
+
+            gRhythm.Controls.Add(Theme.Lbl("运行上限", 16, 174, 70, 20));
+            numLimitSec = Theme.Num(92, 173, 76, 0, 86400, 0, 10);
+            gRhythm.Controls.Add(numLimitSec);
+            gRhythm.Controls.Add(Theme.Lbl("秒，0 = 不限", 174, 176, 120, 20));
+
+            gRhythm.Controls.Add(Theme.Hint("间隔＝每个动作执行完之后再等多久。\r\n随机间隔更像真人操作。", 16, 202, 300, 32));
+
+            // ---------- 列表操作 ----------
+            GroupBox gOps = Theme.Card2("列表操作", 684, 260, 332, 250);
+            p.Controls.Add(gOps);
+            btnUp = Theme.Ghost("↑ 上移", 16, 26, 148, 32);
+            gOps.Controls.Add(btnUp);
+            btnDown = Theme.Ghost("↓ 下移", 168, 26, 148, 32);
+            gOps.Controls.Add(btnDown);
+            btnDel = Theme.Btn("删除", Theme.Red, 16, 64, 148, 32);
+            gOps.Controls.Add(btnDel);
+            btnClear = Theme.Ghost("清空", 168, 64, 148, 32);
+            gOps.Controls.Add(btnClear);
+            btnDup = Theme.Ghost("复制一份", 16, 102, 148, 32);
+            gOps.Controls.Add(btnDup);
+            btnSetInterval = Theme.Ghost("单步间隔", 168, 102, 148, 32);
+            gOps.Controls.Add(btnSetInterval);
+
             lblMacroHint = Theme.Hint(
-                "· 列表为空时，底部「开始」会循环执行「鼠标动作」区的当前配置。\r\n\r\n" +
-                "· 每个动作执行完后按「间隔」等待；单步可设独立间隔（0/0 = 跟随全局）。\r\n\r\n" +
-                "· 循环次数 0 = 无限循环。\r\n\r\n" +
-                "· 双击列表项可设置单步间隔。\r\n\r\n" +
+                "· 双击某一行可设该步自己的间隔。\r\n" +
+                "· 单步间隔填 0/0 表示跟随上面的全局节奏。\r\n" +
+                "· 序列为空时无法开始——先去「键鼠」页添加动作。\r\n" +
                 "· F12 任何情况下都能急停。",
-                14, 26, 242, 316);
-            g7.Controls.Add(lblMacroHint);
+                16, 144, 300, 96);
+            gOps.Controls.Add(lblMacroHint);
         }
 
         void BuildPageAdvanced(TabPage p)
@@ -473,7 +505,7 @@ namespace KMMacro.UI
             btnElevate = Theme.Ghost("以管理员身份重启", 16, 110, 180, 28);
             g9.Controls.Add(btnElevate);
 
-            GroupBox g10 = Theme.Card2("方案文件（可存多套）", 548, 10, 472, 180);
+            GroupBox g10 = Theme.Card2("方案文件（手动保存的多套配置）", 548, 10, 472, 214);
             p.Controls.Add(g10);
             g10.Controls.Add(Theme.Lbl("方案名", 16, 28, 54, 22));
             txtProfileName = new TextBox();
@@ -487,10 +519,15 @@ namespace KMMacro.UI
             g10.Controls.Add(btnLoadProfile);
             btnOpenProfiles = Theme.Ghost("打开方案目录", 16, 62, 140, 26);
             g10.Controls.Add(btnOpenProfiles);
-            lblProfilesPath = Theme.Hint("", 16, 96, 444, 66);
+            chkRestoreLast = Theme.Chk("启动时自动恢复上次配置", 16, 96, 300, 22);
+            chkRestoreLast.Checked = true;
+            g10.Controls.Add(chkRestoreLast);
+            btnClearLast = Theme.Ghost("清除自动记忆", 16, 124, 140, 26);
+            g10.Controls.Add(btnClearLast);
+            lblProfilesPath = Theme.Hint("", 16, 158, 444, 48);
             g10.Controls.Add(lblProfilesPath);
 
-            GroupBox g11 = Theme.Card2("能力与边界（如实说明）", 548, 200, 472, 300);
+            GroupBox g11 = Theme.Card2("能力与边界（如实说明）", 548, 236, 472, 264);
             p.Controls.Add(g11);
             lblAbout = Theme.Hint(
                 "✓ 前台模拟：真实系统输入，任何程序都认（含游戏）；运行时激活并占用你的键鼠。\r\n\r\n" +
@@ -498,8 +535,9 @@ namespace KMMacro.UI
                 "✓ 后台保活：把窗口移出屏幕（不最小化），适合最小化会冻结的程序。\r\n\r\n" +
                 "✗ 反作弊驱动会拦截合成输入，这类只能驱动级方案，本工具不含。\r\n\r\n" +
                 "✗ Chromium 系、部分模拟器的后台投递成功率取决于其实现，无效请改用前台。\r\n\r\n" +
-                "· 目标以管理员运行时，本工具也需管理员权限。",
-                14, 26, 444, 266);
+                "· 目标以管理员运行时，本工具也需管理员权限。\r\n\r\n" +
+                "· 界面上置灰的输入项＝当前配置下不参与执行。",
+                14, 26, 444, 230);
             g11.Controls.Add(lblAbout);
         }
 
@@ -544,37 +582,49 @@ namespace KMMacro.UI
             TableLayoutPanel t = new TableLayoutPanel();
             t.Dock = DockStyle.Fill;
             t.ColumnCount = 2;
-            t.RowCount = 3;
+            t.RowCount = 4;
             t.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             t.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            t.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
-            t.RowStyles.Add(new RowStyle(SizeType.Absolute, 52F));
+            t.RowStyles.Add(new RowStyle(SizeType.Absolute, 54F));
+            t.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
+            t.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
             t.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             right.Controls.Add(t);
             _footerTable = t;
 
-            btnStart = Theme.Btn("▶   开始  (F8)", Theme.Green, 0, 0, 100, 50);
+            btnStart = Theme.Btn("▶   开始运行  (F8)", Theme.Green, 0, 0, 100, 50);
             btnStart.Dock = DockStyle.Fill;
             btnStart.Font = Theme.FontBig;
             btnStart.Margin = new Padding(0, 0, 0, 6);
             t.Controls.Add(btnStart, 0, 0);
             t.SetColumnSpan(btnStart, 2);
 
-            btnStop = Theme.Btn("■  停止 (F9)", Theme.Red, 0, 0, 100, 46);
+            btnStop = Theme.Btn("■  停止 (F9)", Theme.Red, 0, 0, 100, 42);
             btnStop.Dock = DockStyle.Fill;
-            btnStop.Margin = new Padding(0, 0, 4, 6);
+            btnStop.Margin = new Padding(0, 0, 4, 4);
             t.Controls.Add(btnStop, 0, 1);
 
-            btnPause = Theme.Btn("‖  暂停 (F10)", Theme.Purple, 0, 0, 100, 46);
+            btnPause = Theme.Btn("‖  暂停 (F10)", Theme.Purple, 0, 0, 100, 42);
             btnPause.Dock = DockStyle.Fill;
-            btnPause.Margin = new Padding(4, 0, 0, 6);
+            btnPause.Margin = new Padding(4, 0, 0, 4);
             t.Controls.Add(btnPause, 1, 1);
 
-            btnClearLog = Theme.Ghost("清空日志", 0, 0, 100, 26);
+            lblRunReason = new Label();
+            lblRunReason.Text = "";
+            lblRunReason.Font = Theme.FontSmall;
+            lblRunReason.ForeColor = Theme.Muted;
+            lblRunReason.Dock = DockStyle.Fill;
+            lblRunReason.TextAlign = ContentAlignment.MiddleLeft;
+            lblRunReason.AutoEllipsis = true;
+            lblRunReason.Margin = new Padding(0, 0, 0, 2);
+            t.Controls.Add(lblRunReason, 0, 2);
+            t.SetColumnSpan(lblRunReason, 2);
+
+            btnClearLog = Theme.Ghost("清空日志", 0, 0, 100, 24);
             btnClearLog.Dock = DockStyle.Top;
-            btnClearLog.Height = 26;
-            btnClearLog.Margin = new Padding(0, 2, 0, 0);
-            t.Controls.Add(btnClearLog, 0, 2);
+            btnClearLog.Height = 24;
+            btnClearLog.Margin = new Padding(0, 0, 0, 0);
+            t.Controls.Add(btnClearLog, 0, 3);
             t.SetColumnSpan(btnClearLog, 2);
 
             return p;
@@ -643,11 +693,9 @@ namespace KMMacro.UI
 
         void HookEvents()
         {
-            rbForeground.CheckedChanged += delegate { UpdateEngineHint(); UpdateStatus(); };
-            rbBackground.CheckedChanged += delegate { UpdateEngineHint(); UpdateStatus(); };
-            rbKeepAlive.CheckedChanged += delegate { UpdateEngineHint(); UpdateStatus(); };
-            rbFixed.CheckedChanged += delegate { SyncIntervalEnabled(); };
-            rbRandom.CheckedChanged += delegate { SyncIntervalEnabled(); };
+            rbForeground.CheckedChanged += delegate { UpdateEngineHint(); UpdateStatus(); RefreshPlan(); };
+            rbBackground.CheckedChanged += delegate { UpdateEngineHint(); UpdateStatus(); RefreshPlan(); };
+            rbKeepAlive.CheckedChanged += delegate { UpdateEngineHint(); UpdateStatus(); RefreshPlan(); };
 
             btnRefresh.Click += delegate { RefreshWindows(); };
             btnPickWindow.Click += delegate { StartPick(false); };
@@ -655,12 +703,30 @@ namespace KMMacro.UI
             btnDiagnose.Click += delegate { Diagnose(); };
             cbWindows.SelectedIndexChanged += delegate { OnWindowSelected(); };
 
+            cbMouseAction.SelectedIndexChanged += delegate { UpdateMouseControls(); RefreshPlan(); };
+            cbMouseButton.SelectedIndexChanged += delegate { UpdateMouseControls(); };
+            cbPosMode.SelectedIndexChanged += delegate { UpdateMouseControls(); };
+            numHold.ValueChanged += delegate { UpdateMouseControls(); };
+            numJitter.ValueChanged += delegate { UpdateMouseControls(); };
+            numNotches.ValueChanged += delegate { UpdateMouseControls(); };
             btnPickPos.Click += delegate { StartPick(true); };
             btnAddMouse.Click += delegate { AddStep(BuildMouseStep()); };
+            btnTryMouse.Click += delegate { BeginRun(BuildMouseStep(), "试跑鼠标动作"); };
+
+            txtText.TextChanged += delegate { UpdateKeyControls(); };
+            cbKey.SelectedIndexChanged += delegate { UpdateKeyControls(); };
             btnAddKey.Click += delegate { AddStep(BuildKeyStep()); };
             btnAddText.Click += delegate { AddStep(BuildTextStep()); };
-            btnQuickMouse.Click += delegate { BeginRun(BuildMouseStep(), "鼠标动作"); };
-            btnQuickKey.Click += delegate { BeginRun(BuildKeyStep(), "键盘动作"); };
+            btnTryKey.Click += delegate { BeginRun(BuildKeyStep(), "试跑键盘动作"); };
+
+            btnGoRhythm.Click += delegate { GoMacroPage(); };
+            rbFixed.CheckedChanged += delegate { SyncIntervalEnabled(); RefreshPlan(); };
+            rbRandom.CheckedChanged += delegate { SyncIntervalEnabled(); RefreshPlan(); };
+            numFixed.ValueChanged += delegate { RefreshPlan(); };
+            numMin.ValueChanged += delegate { RefreshPlan(); };
+            numMax.ValueChanged += delegate { RefreshPlan(); };
+            numLoop.ValueChanged += delegate { RefreshPlan(); };
+            numLimitSec.ValueChanged += delegate { RefreshPlan(); };
 
             btnUp.Click += delegate { MoveStep(-1); };
             btnDown.Click += delegate { MoveStep(1); };
@@ -680,6 +746,7 @@ namespace KMMacro.UI
             btnSaveProfile.Click += delegate { SaveProfileFile(); };
             btnLoadProfile.Click += delegate { LoadProfileFile(); };
             btnOpenProfiles.Click += delegate { OpenProfilesFolder(); };
+            btnClearLast.Click += delegate { ClearAutoMemory(); };
 
             cboHotStart.SelectedIndexChanged += delegate { RegisterHotkeys(); };
             cboHotStop.SelectedIndexChanged += delegate { RegisterHotkeys(); };
@@ -712,12 +779,15 @@ namespace KMMacro.UI
                 cboHotPause.SelectedIndex = IndexOfHotkey("F10");
                 chkPostChar.Checked = true;
                 chkKeepFg.Checked = true;
+                RefreshPlan();
+                UpdateMouseControls();
+                UpdateKeyControls();
             }
             finally
             {
                 _syncing = false;
             }
-            lblProfilesPath.Text = "保存目录：" + _profilesDir;
+            lblProfilesPath.Text = "自动记忆：" + _configPath + "\r\n方案目录：" + _profilesDir;
         }
 
         static int IndexOfHotkey(string name)
@@ -775,6 +845,8 @@ namespace KMMacro.UI
             lblTarget.Text = "已绑定：" + Trim(WTarget.Describe(hwnd), 60);
             Log("已绑定目标窗口：" + WTarget.Describe(hwnd));
             UpdateStatus();
+            UpdateMouseControls();
+            RefreshPlan();
         }
 
         void UnbindTarget()
@@ -784,6 +856,8 @@ namespace KMMacro.UI
             lblTarget.Text = "未绑定窗口";
             Log("已取消绑定");
             UpdateStatus();
+            UpdateMouseControls();
+            RefreshPlan();
         }
 
         void StartPick(bool coords)
@@ -872,12 +946,6 @@ namespace KMMacro.UI
             {
                 SetNum(numX, pt.X);
                 SetNum(numY, pt.Y);
-                if (mode == 0)
-                {
-                    _syncing = true;
-                    cbPosMode.SelectedIndex = 1;
-                    _syncing = false;
-                }
                 Log(string.Format("已拾取屏幕坐标：({0}, {1})", pt.X, pt.Y));
             }
         }
@@ -997,6 +1065,7 @@ namespace KMMacro.UI
                 lvSteps.Items.Add(it);
             }
             lvSteps.EndUpdate();
+            RefreshPlan();
         }
 
         void MoveStep(int delta)
@@ -1110,43 +1179,45 @@ namespace KMMacro.UI
                 Log("已在运行中，先停止再开始");
                 return;
             }
+
             Profile p = UiToProfile();
+
+            // 只有一个执行对象：宏序列（「试跑一次」是显式的一次性动作，不算序列）
+            if (single == null && p.Steps.Count == 0)
+            {
+                Log("还没有任何动作：先在「④ 鼠标动作」或「⑤ 键盘动作」里点「＋ 添加到序列」");
+                UpdateRunAffordance();
+                return;
+            }
 
             bool needTarget = p.Engine != EngineKind.Foreground;
             if (needTarget && _target == IntPtr.Zero)
             {
-                MessageBox.Show(this,
-                    "后台消息 / 后台保活必须先绑定目标窗口。\r\n\r\n请用「刷新列表」选择窗口，或点「从光标拾取」。\r\n如果目标窗口必须在前台，请改用「前台模拟」。",
-                    "无法开始", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Log("无法开始：当前引擎需要目标窗口，但还未绑定。请绑定窗口，或改用「前台模拟」。");
+                UpdateRunAffordance();
                 return;
             }
             if (needTarget && !Win32.IsWindow(_target))
             {
-                MessageBox.Show(this, "目标窗口已关闭，请重新绑定。", "无法开始",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Log("无法开始：目标窗口已关闭，请重新绑定。");
+                UpdateRunAffordance();
                 return;
             }
 
             Step fallback = single;
-            if (fallback == null && p.Steps.Count == 0) fallback = BuildMouseStep();
-            if (p.Steps.Count == 0 && fallback == null)
-            {
-                MessageBox.Show(this, "没有可执行的动作。", "无法开始",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
             if (single != null) p.Steps.Clear();
 
             if (NeedsTargetForClientCoords(p, fallback) && _target == IntPtr.Zero)
             {
-                MessageBox.Show(this,
-                    "有动作使用「窗口客户区」坐标，但还没绑定目标窗口。\r\n请先绑定窗口，或把位置改成「屏幕坐标 / 当前光标」。",
-                    "无法开始", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Log("无法开始：有动作使用「窗口客户区」坐标，但未绑定目标窗口。请在「② 目标窗口」绑定，或把位置改成「屏幕坐标 / 当前光标」。");
+                UpdateRunAffordance();
                 return;
             }
 
-            string what = single != null ? label
-                : (p.Steps.Count > 0 ? string.Format("宏序列（{0} 个动作）", p.Steps.Count) : "当前鼠标动作");
+            string what;
+            if (single != null) what = label + "（只执行一次，不加入序列）";
+            else what = string.Format("宏序列（{0} 个动作）", p.Steps.Count);
+
             Log(string.Format("准备运行：{0} · 引擎 {1}", what, Names.EngineName(p.Engine)));
             lblCount.Text = "操作 0";
             lblElapsed.Text = "时长 00:00:00";
@@ -1190,6 +1261,7 @@ namespace KMMacro.UI
                 lblState.ForeColor = Theme.Green;
                 btnStart.Enabled = false;
                 btnPause.Text = "‖  暂停 (F10)";
+                UpdateRunAffordance();
                 ShowTray("开始运行");
             }
             else if (state == "paused")
@@ -1206,6 +1278,7 @@ namespace KMMacro.UI
                 btnPause.Text = "‖  暂停 (F10)";
                 lblCount.Text = "操作 " + _runner.Count;
                 if (_tray != null) _tray.Visible = false;
+                RefreshPlan();
             }
         }
 
@@ -1329,6 +1402,177 @@ namespace KMMacro.UI
             }
         }
 
+        // ==================== 状态如实反映 ====================
+
+        /// <summary>该动作当前哪些参数真正生效——用不到的一律置灰，并在说明里讲清原因。</summary>
+        void UpdateMouseControls()
+        {
+            if (cbMouseAction == null) return;
+            int ai = Math.Max(0, cbMouseAction.SelectedIndex);
+            bool isWheel = ai == 4;
+            bool isHoldAction = ai == 2 || ai == 3;      // 按下不松 / 抬起
+            bool posUsed = cbPosMode.SelectedIndex != 0; // 当前光标模式下没有坐标
+
+            numNotches.Enabled = isWheel;
+            cbMouseButton.Enabled = !isWheel;
+            numHold.Enabled = !isWheel && !isHoldAction;
+            numX.Enabled = posUsed;
+            numY.Enabled = posUsed;
+            numJitter.Enabled = posUsed;
+            btnPickPos.Enabled = posUsed;
+
+            string text;
+            if (isWheel)
+            {
+                text = string.Format("当前动作：滚轮 {0} 格。键位与按住时长不参与执行。", numNotches.Value);
+            }
+            else if (isHoldAction)
+            {
+                text = string.Format("当前动作：{0}。按下与抬起是两条独立动作，所以按住时长不参与执行。",
+                    Names.ActionName((MouseActionKind)ai));
+            }
+            else
+            {
+                text = string.Format("当前动作：{0} {1}，按住 {2}ms。",
+                    Names.ButtonName((MouseButtonKind)Math.Max(0, cbMouseButton.SelectedIndex)),
+                    Names.ActionName((MouseActionKind)ai), numHold.Value);
+            }
+            if (!posUsed)
+                text += "\r\n位置＝当前光标：点击落在运行那一刻的鼠标位置，X/Y 与随机偏移不生效。";
+            else if (cbPosMode.SelectedIndex == 2 && _target == IntPtr.Zero)
+                text += "\r\n位置＝窗口客户区：需要先在「② 目标窗口」绑定窗口。";
+            lblMouseHint.Text = text;
+        }
+
+        void UpdateKeyControls()
+        {
+            if (lblKeyHint == null) return;
+            bool hasText = !string.IsNullOrEmpty(txtText.Text);
+            lblKeyHint.Text = hasText
+                ? "「文本」只被「＋ 添加文本动作」使用；按键动作只发送上面选中的主键。"
+                : "后台输入文本时，建议把位置设为「窗口客户区」并对准输入框。";
+        }
+
+        /// <summary>「开始运行」到底会跑什么，直接写在界面上，不靠用户猜。</summary>
+        void RefreshPlan()
+        {
+            if (lblPlanEngine == null) return;
+
+            EngineKind eng = rbKeepAlive.Checked
+                ? EngineKind.KeepAlive
+                : (rbForeground.Checked ? EngineKind.Foreground : EngineKind.Background);
+            lblPlanEngine.Text = "引擎：" + Names.EngineName(eng);
+
+            if (_target == IntPtr.Zero)
+                lblPlanTarget.Text = "目标：未绑定";
+            else
+            {
+                string t = _targetInfo != null ? _targetInfo.Title : Win32.GetWindowTitle(_target);
+                lblPlanTarget.Text = "目标：" + Trim(t, 18);
+            }
+
+            if (_steps.Count == 0)
+            {
+                lblPlanActions.Text = "动作：还没有任何动作 —— 用右侧「＋ 添加到序列」加入";
+                lblPlanActions.ForeColor = Theme.Red;
+            }
+            else
+            {
+                string s = string.Format("动作 {0} 个：", _steps.Count);
+                int max = Math.Min(_steps.Count, 6);
+                for (int i = 0; i < max; i++)
+                {
+                    if (i > 0) s += " → ";
+                    s += _steps[i].KindText();
+                }
+                if (_steps.Count > max) s += " → …";
+                lblPlanActions.Text = s;
+                lblPlanActions.ForeColor = Theme.Ink;
+            }
+
+            string rhythm = rbFixed.Checked
+                ? string.Format("间隔 固定 {0}ms", numFixed.Value)
+                : string.Format("间隔 随机 {0}~{1}ms", numMin.Value, numMax.Value);
+            string loop = numLoop.Value <= 0 ? "循环 无限" : string.Format("循环 {0} 次", numLoop.Value);
+            string limit = numLimitSec.Value <= 0 ? "不限时长" : string.Format("上限 {0} 秒", numLimitSec.Value);
+            lblPlanRhythm.Text = rhythm + " · " + loop + " · " + limit;
+
+            UpdateRunAffordance();
+        }
+
+        /// <summary>主按钮能不能按、为什么不能按，直接写在按钮下面。</summary>
+        void UpdateRunAffordance()
+        {
+            if (btnStart == null || lblRunReason == null) return;
+
+            bool needTarget = !rbForeground.Checked;
+            lblTargetHint.Text = needTarget
+                ? "当前引擎：需要绑定目标窗口（可在后台/最小化运行）"
+                : "当前引擎：前台模拟，可不绑定；若已绑定则运行时自动激活它";
+
+            string reason = null;
+            if (_steps.Count == 0)
+                reason = "还没有动作：先「＋ 添加到序列」";
+            else if (needTarget && _target == IntPtr.Zero)
+                reason = "当前引擎需要目标窗口：请先在 ② 绑定";
+            else if (needTarget && !Win32.IsWindow(_target))
+                reason = "目标窗口已关闭：请重新绑定";
+            else if (_target == IntPtr.Zero && HasClientCoordStep())
+                reason = "「窗口客户区」坐标需先绑定目标窗口";
+
+            bool warnTarget = needTarget && _target == IntPtr.Zero;
+            lblTargetWarn.Text = warnTarget ? "⚠ 当前引擎必须绑定目标窗口，否则无法开始" : "";
+
+            bool running = _runner.IsRunning;
+            if (running) reason = "运行中……";
+
+            bool canStart = reason == null && !running;
+            lblRunReason.Text = canStart ? "就绪：点「开始运行」或按 F8"
+                : (running ? "运行中……" : reason);
+            lblRunReason.ForeColor = canStart ? Theme.Muted : Theme.Red;
+
+            // 禁用态必须看起来就是禁用的，否则又是一个误导
+            btnStart.Enabled = canStart;
+            btnStart.BackColor = canStart ? Theme.Green : Color.FromArgb(214, 219, 226);
+            btnStart.ForeColor = canStart ? Color.White : Color.FromArgb(136, 144, 158);
+            Color idle = Color.FromArgb(214, 219, 226);
+            Color idleText = Color.FromArgb(136, 144, 158);
+
+            btnStop.Enabled = running;
+            btnStop.BackColor = running ? Theme.Red : idle;
+            btnStop.ForeColor = running ? Color.White : idleText;
+
+            btnPause.Enabled = running;
+            btnPause.BackColor = running ? Theme.Purple : idle;
+            btnPause.ForeColor = running ? Color.White : idleText;
+        }
+
+        bool HasClientCoordStep()
+        {
+            for (int i = 0; i < _steps.Count; i++)
+                if (_steps[i].Pos == PosMode.Client) return true;
+            return false;
+        }
+
+        void GoMacroPage()
+        {
+            if (_tabs != null && _tabs.TabPages.Count > 1) _tabs.SelectedIndex = 1;
+        }
+
+        void ClearAutoMemory()
+        {
+            try
+            {
+                if (File.Exists(_configPath)) File.Delete(_configPath);
+                Log("已清除自动记忆：" + _configPath);
+                lblProfilesPath.Text = "自动记忆已清除，下次启动用默认配置。\r\n方案目录：" + _profilesDir;
+            }
+            catch (Exception ex)
+            {
+                Log("清除失败：" + ex.Message);
+            }
+        }
+
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == Win32.WM_HOTKEY)
@@ -1421,6 +1665,11 @@ namespace KMMacro.UI
         {
             try
             {
+                if (chkRestoreLast != null && !chkRestoreLast.Checked)
+                {
+                    Log("已按「高级」页设置跳过恢复上次配置");
+                    return;
+                }
                 if (!File.Exists(_configPath)) return;
                 ApplyProfile(Profile.Load(_configPath));
             }
@@ -1599,8 +1848,9 @@ namespace KMMacro.UI
             }
             if (_footerTable != null)
             {
-                _footerTable.RowStyles[0].Height = 58f * s;
-                _footerTable.RowStyles[1].Height = 52f * s;
+                _footerTable.RowStyles[0].Height = 54f * s;
+                _footerTable.RowStyles[1].Height = 48f * s;
+                _footerTable.RowStyles[2].Height = 22f * s;
             }
             if (_statusTable != null)
             {
@@ -1618,7 +1868,7 @@ namespace KMMacro.UI
             {
                 lvSteps.Columns[0].Width = (int)(44 * s);
                 lvSteps.Columns[1].Width = (int)(86 * s);
-                lvSteps.Columns[2].Width = (int)(414 * s);
+                lvSteps.Columns[2].Width = (int)(380 * s);
                 lvSteps.Columns[3].Width = (int)(118 * s);
             }
             if (_headerRight != null) _headerRight.Width = (int)(300 * s);
