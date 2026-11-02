@@ -3,6 +3,8 @@
 指定窗口的键鼠宏 / 连点工具。**不抢前台、目标最小化也能跑**，可调键位、随机间隔、按键时长，支持多步宏序列。
 免安装单文件 exe，无第三方依赖、不联网。
 
+![主界面](docs/screenshots/02-键鼠页-就绪.png)
+
 ---
 
 ## 1. 快速开始
@@ -176,3 +178,16 @@ docs/superpowers/specs/     设计规格
 ```
 
 `src/Engine` 与 `src/Core` 不引用 WinForms，因此主程序与测试程序共用同一份源码——测试验证的就是线上代码。
+
+## 12. 许可证与贡献
+
+MIT License © 2026 river499 —— 详见 [LICENSE](LICENSE)。
+
+欢迎 issue / PR。提交前请确认：
+
+- `build.cmd` 能编译通过（只需系统自带 .NET Framework 4.8，无需安装 SDK）
+- `tests\EngineTest.exe` 全绿（7 项断言）
+- 保持 **C# 5 语法**（旧版 csc 限制：不能用 `$"..."`、`?.`、`out var`、表达式体成员）
+- `src/Engine` 与 `src/Core` 不得引用 WinForms —— 测试程序要和主程序共用这份源码
+
+> 本项目仅为桌面自动化工具，请遵守目标软件的用户协议与当地法律；仓库不提供任何绕过反作弊的驱动级方案。
