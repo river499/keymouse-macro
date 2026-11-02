@@ -194,4 +194,11 @@ MIT License © 2026 river499 —— 详见 [LICENSE](LICENSE)。
 - 保持 **C# 5 语法**（旧版 csc 限制：不能用 `$"..."`、`?.`、`out var`、表达式体成员）
 - `src/Engine` 与 `src/Core` 不得引用 WinForms —— 测试程序要和主程序共用这份源码
 
+维护提示（本机环境）：Windows 上若 `git push` 卡住不返回，或报 `CRYPT_E_NO_REVOCATION_CHECK`：
+
+- 卡住 = Git Credential Manager 在非交互终端等输入 → 清空凭据助手链，改用 `gh auth git-credential`
+- 报错 = 访问不到证书吊销列表 → 关闭 schannel 吊销检查（`http.schannelCheckRevoke=false`）
+
+因此仓库提供了 `tools\push.cmd`，内部就是这两条，直接 `tools\push.cmd` 即可。
+
 > 本项目仅为桌面自动化工具，请遵守目标软件的用户协议与当地法律；仓库不提供任何绕过反作弊的驱动级方案。
