@@ -1,0 +1,34 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 显示编译器版本
+        shell: cmd
+        run: |
+          "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /?
+
+      - name: 编译（仅用系统自带 .NET Framework 编译器，不装任何 SDK）
+        shell: cmd
+        run: build.cmd
+
+      - name: 产物信息
+        shell: pwsh
+        run: |
+          Get-ChildItem dist | Format-Table Name, Length
+          if (-not (Test-Path 'dist\KMMacro.exe')) { throw '没有生成产物' }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keymouse-macro-win
+          path: dist/KMMacro.exe
+          if-no-files-found: error

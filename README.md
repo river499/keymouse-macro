@@ -1,7 +1,11 @@
 # 键鼠宏工坊 v1.0
 
+[![build](https://github.com/river499/keymouse-macro/actions/workflows/build.yml/badge.svg)](https://github.com/river499/keymouse-macro/actions/workflows/build.yml)
+
 指定窗口的键鼠宏 / 连点工具。**不抢前台、目标最小化也能跑**，可调键位、随机间隔、按键时长，支持多步宏序列。
 免安装单文件 exe，无第三方依赖、不联网。
+
+> 不想自己编译：直接下 [Release](https://github.com/river499/keymouse-macro/releases/latest) 里的 `keymouse-macro-v1.0.0.exe`。
 
 ![主界面](docs/screenshots/02-键鼠页-就绪.png)
 
